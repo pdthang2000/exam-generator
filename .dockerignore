@@ -1,0 +1,13 @@
+__pycache__
+*.pyc
+.env
+venv/
+.git
+.gitignore
+chroma_data/
+uploads/
+exam_generator.db
+docs/
+references/
+*.md
+!requirements.txt

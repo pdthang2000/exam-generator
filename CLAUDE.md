@@ -12,16 +12,24 @@ See [docs/plan.md](docs/plan.md) for architecture, tech stack, file structure, a
 - LLM: OpenAI API (GPT-4o-mini) via `OPENAI_BASE_URL`
 - Embeddings: text-embedding-3-small
 - Vector store: ChromaDB (persistent, `chroma_data/`)
-- Database: SQLite (`exam_generator.db`)
+- Database: SQLite (`app.db`)
 - File parsing: PyPDF2, python-pptx
 
 ## How to run
+
+### Local
 ```bash
 python -m venv venv
 source venv/bin/activate
 pip install -r requirements.txt
 cp .env.example .env  # fill in API key
 python app.py          # http://localhost:8080
+```
+
+### Docker
+```bash
+cp .env.example .env  # fill in API key
+docker compose up --build   # http://localhost:8080
 ```
 
 ## Project structure
@@ -38,12 +46,13 @@ chroma_data/    — ChromaDB persistent storage
 
 ## Current checkpoint
 
-### Phase 1 — Skeleton + Document Upload: NOT STARTED
-- [ ] Flask app with basic routes
-- [ ] SQLite schema
-- [ ] File upload endpoint (PDF, PPTX, TXT)
-- [ ] Parse text from each file type
-- [ ] Frontend: upload area + document list
+### Phase 1 — Skeleton + Document Upload: DONE
+- [x] Flask app with basic routes
+- [x] SQLite schema
+- [x] File upload endpoint (PDF, PPTX, TXT)
+- [x] Parse text from each file type
+- [x] Frontend: upload area + document list
+- [x] Docker setup (Dockerfile + docker-compose.yml)
 
 ### Phase 2 — Ingestion Pipeline: NOT STARTED
 - [ ] Chunking logic

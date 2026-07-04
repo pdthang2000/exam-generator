@@ -1,0 +1,344 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AI Exam Generator</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: #f5f5f5;
+      color: #222;
+      min-height: 100vh;
+      padding: 40px 16px;
+    }
+
+    .container { max-width: 720px; margin: 0 auto; }
+
+    h1 { font-size: 1.8rem; font-weight: 700; margin-bottom: 8px; }
+    .subtitle { color: #666; margin-bottom: 32px; }
+
+    .upload-card {
+      background: #fff;
+      border: 2px dashed #ccc;
+      border-radius: 12px;
+      padding: 40px;
+      text-align: center;
+      transition: border-color 0.2s;
+      cursor: pointer;
+    }
+
+    .upload-card:hover, .upload-card.dragover { border-color: #4f46e5; }
+    .upload-icon { font-size: 2.5rem; margin-bottom: 12px; }
+    .upload-card p { color: #555; margin-bottom: 16px; }
+    #file-input { display: none; }
+
+    .btn {
+      display: inline-block;
+      padding: 10px 24px;
+      border-radius: 8px;
+      border: none;
+      cursor: pointer;
+      font-size: 0.95rem;
+      font-weight: 600;
+      transition: opacity 0.15s;
+    }
+
+    .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+    .btn-primary { background: #4f46e5; color: #fff; }
+    .btn-primary:hover:not(:disabled) { background: #4338ca; }
+    .btn-outline { background: transparent; border: 2px solid #4f46e5; color: #4f46e5; }
+    .btn-outline:hover { background: #eef2ff; }
+    .btn-danger { background: transparent; border: none; color: #dc2626; cursor: pointer; font-size: 0.85rem; padding: 4px 8px; }
+    .btn-danger:hover { text-decoration: underline; }
+
+    .file-name {
+      margin-top: 12px;
+      font-size: 0.9rem;
+      color: #4f46e5;
+      font-weight: 500;
+    }
+
+    .status {
+      text-align: center;
+      padding: 16px;
+      border-radius: 8px;
+      margin-top: 20px;
+      font-size: 0.95rem;
+    }
+
+    .status.loading { background: #eef2ff; color: #4338ca; }
+    .status.error { background: #fee2e2; color: #b91c1c; }
+    .status.success { background: #f0fdf4; color: #16a34a; }
+
+    .spinner {
+      display: inline-block;
+      width: 16px; height: 16px;
+      border: 2px solid #c7d2fe;
+      border-top-color: #4f46e5;
+      border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+      vertical-align: middle;
+      margin-right: 8px;
+    }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .section-title {
+      font-size: 1.2rem;
+      font-weight: 600;
+      margin: 36px 0 16px;
+    }
+
+    .doc-list { display: flex; flex-direction: column; gap: 10px; }
+
+    .doc-item {
+      background: #fff;
+      border-radius: 10px;
+      padding: 16px 20px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.07);
+    }
+
+    .doc-info { display: flex; align-items: center; gap: 12px; }
+
+    .doc-icon {
+      width: 36px; height: 36px;
+      border-radius: 8px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1.1rem;
+      flex-shrink: 0;
+    }
+
+    .doc-icon.pdf { background: #fee2e2; }
+    .doc-icon.pptx { background: #fef3c7; }
+    .doc-icon.txt { background: #e0e7ff; }
+
+    .doc-name { font-weight: 500; font-size: 0.95rem; }
+    .doc-meta { font-size: 0.8rem; color: #6b7280; margin-top: 2px; }
+
+    .empty-state {
+      text-align: center;
+      padding: 32px;
+      color: #9ca3af;
+      font-size: 0.95rem;
+    }
+
+    .doc-actions { display: flex; gap: 8px; align-items: center; }
+
+    .btn-preview { background: transparent; border: none; color: #4f46e5; cursor: pointer; font-size: 0.85rem; padding: 4px 8px; }
+    .btn-preview:hover { text-decoration: underline; }
+
+    .preview-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.4);
+      z-index: 100;
+      justify-content: center;
+      align-items: center;
+      padding: 24px;
+    }
+
+    .preview-overlay.open { display: flex; }
+
+    .preview-box {
+      background: #fff;
+      border-radius: 12px;
+      padding: 28px;
+      max-width: 720px;
+      width: 100%;
+      max-height: 80vh;
+      display: flex;
+      flex-direction: column;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.2);
+    }
+
+    .preview-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 16px;
+    }
+
+    .preview-header h3 { font-size: 1.1rem; }
+
+    .preview-close {
+      background: none; border: none; font-size: 1.4rem;
+      cursor: pointer; color: #6b7280; padding: 0 4px;
+    }
+
+    .preview-content {
+      overflow-y: auto;
+      white-space: pre-wrap;
+      font-size: 0.9rem;
+      line-height: 1.6;
+      color: #374151;
+      background: #f9fafb;
+      border-radius: 8px;
+      padding: 16px;
+    }
+  </style>
+</head>
+<body>
+<div class="container">
+  <h1>AI Exam Generator</h1>
+  <p class="subtitle">Upload documents and generate exams with AI.</p>
+
+  <div class="upload-card" id="drop-zone">
+    <div class="upload-icon">📄</div>
+    <p>Drag & drop a file here, or click to browse</p>
+    <label for="file-input" class="btn btn-outline">Choose File</label>
+    <input type="file" id="file-input" accept=".pdf,.pptx,.txt" />
+    <div class="file-name" id="file-name"></div>
+  </div>
+
+  <button class="btn btn-primary" id="upload-btn" disabled style="display:block;width:100%;margin-top:20px;padding:14px;font-size:1rem;">
+    Upload Document
+  </button>
+
+  <div id="status"></div>
+
+  <h2 class="section-title">Documents</h2>
+  <div id="doc-list" class="doc-list">
+    <div class="empty-state">No documents uploaded yet.</div>
+  </div>
+</div>
+
+<div class="preview-overlay" id="preview-overlay">
+  <div class="preview-box">
+    <div class="preview-header">
+      <h3 id="preview-title">Preview</h3>
+      <button class="preview-close" onclick="closePreview()">&times;</button>
+    </div>
+    <div class="preview-content" id="preview-content"></div>
+  </div>
+</div>
+
+<script>
+  const fileInput = document.getElementById("file-input");
+  const dropZone = document.getElementById("drop-zone");
+  const fileNameEl = document.getElementById("file-name");
+  const uploadBtn = document.getElementById("upload-btn");
+  const statusEl = document.getElementById("status");
+  const docListEl = document.getElementById("doc-list");
+
+  let selectedFile = null;
+  const ALLOWED = ["pdf", "pptx", "txt"];
+  const ICONS = { pdf: "📕", pptx: "📊", txt: "📝" };
+
+  dropZone.addEventListener("click", () => fileInput.click());
+  fileInput.addEventListener("change", () => handleFile(fileInput.files[0]));
+
+  dropZone.addEventListener("dragover", e => { e.preventDefault(); dropZone.classList.add("dragover"); });
+  dropZone.addEventListener("dragleave", () => dropZone.classList.remove("dragover"));
+  dropZone.addEventListener("drop", e => {
+    e.preventDefault();
+    dropZone.classList.remove("dragover");
+    handleFile(e.dataTransfer.files[0]);
+  });
+
+  function handleFile(f) {
+    if (!f) return;
+    const ext = f.name.split(".").pop().toLowerCase();
+    if (!ALLOWED.includes(ext)) {
+      statusEl.innerHTML = `<div class="status error">Unsupported file type. Allowed: PDF, PPTX, TXT</div>`;
+      return;
+    }
+    selectedFile = f;
+    fileNameEl.textContent = f.name;
+    uploadBtn.disabled = false;
+    statusEl.innerHTML = "";
+  }
+
+  uploadBtn.addEventListener("click", async () => {
+    if (!selectedFile) return;
+    uploadBtn.disabled = true;
+    statusEl.innerHTML = `<div class="status loading"><span class="spinner"></span>Uploading and parsing document...</div>`;
+
+    const form = new FormData();
+    form.append("file", selectedFile);
+
+    try {
+      const res = await fetch("/api/documents", { method: "POST", body: form });
+      const raw = await res.text();
+      let data;
+      try { data = JSON.parse(raw); } catch { throw new Error("Server error"); }
+      if (!res.ok) throw new Error(data.error || "Upload failed");
+      statusEl.innerHTML = `<div class="status success">Uploaded successfully!</div>`;
+      selectedFile = null;
+      fileNameEl.textContent = "";
+      fileInput.value = "";
+      loadDocuments();
+    } catch (err) {
+      statusEl.innerHTML = `<div class="status error">Error: ${err.message}</div>`;
+      uploadBtn.disabled = false;
+    }
+  });
+
+  async function loadDocuments() {
+    const res = await fetch("/api/documents");
+    const docs = await res.json();
+
+    if (docs.length === 0) {
+      docListEl.innerHTML = `<div class="empty-state">No documents uploaded yet.</div>`;
+      return;
+    }
+
+    docListEl.innerHTML = docs.map(doc => `
+      <div class="doc-item" data-id="${doc.id}">
+        <div class="doc-info">
+          <div class="doc-icon ${doc.file_type}">${ICONS[doc.file_type] || "📄"}</div>
+          <div>
+            <div class="doc-name">${doc.filename}</div>
+            <div class="doc-meta">${doc.file_type.toUpperCase()} · ${new Date(doc.upload_time).toLocaleDateString()}</div>
+          </div>
+        </div>
+        <div class="doc-actions">
+          <button class="btn-preview" onclick="previewDoc(${doc.id}, '${doc.filename}')">Preview</button>
+          <button class="btn-danger" onclick="deleteDoc(${doc.id})">Remove</button>
+        </div>
+      </div>
+    `).join("");
+  }
+
+  async function previewDoc(id, filename) {
+    const overlay = document.getElementById("preview-overlay");
+    const titleEl = document.getElementById("preview-title");
+    const contentEl = document.getElementById("preview-content");
+
+    titleEl.textContent = filename;
+    contentEl.textContent = "Loading...";
+    overlay.classList.add("open");
+
+    try {
+      const res = await fetch(`/api/documents/${id}/preview`);
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error);
+      contentEl.textContent = data.text;
+    } catch (err) {
+      contentEl.textContent = "Error: " + err.message;
+    }
+  }
+
+  function closePreview() {
+    document.getElementById("preview-overlay").classList.remove("open");
+  }
+
+  document.getElementById("preview-overlay").addEventListener("click", e => {
+    if (e.target === e.currentTarget) closePreview();
+  });
+
+  async function deleteDoc(id) {
+    await fetch(`/api/documents/${id}`, { method: "DELETE" });
+    loadDocuments();
+  }
+
+  loadDocuments();
+</script>
+</body>
+</html>

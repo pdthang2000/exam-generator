@@ -1,12 +1,69 @@
-# exam-generator
-❯ Read the /references folder for context.
-I want to build a proper app that have frontend and backend. backend using simple python setup, a few .py files could work.
-I want to ask back and forward with you to clarify a proper architecture and plan to build this app.
+# AI Exam Generator
 
-Read references for context. Briefly, I joined a AI Application Engineer Course and about to do the final assignment: Exam Generator which can:
-- Ingest pdf (Could be .pptx, .txt, ...), store it (in some form need clarifications) and generate question:
-    - Can choose hardness, number of questions, number of answers (single or multiple choices)
-- Have chatbot features:
-    - In a loaded context, we could ask and reply about files we loaded in the context.
+A RAG-based app that ingests documents (PDF, PPTX, TXT), lets you chat about them, and generates exam questions using AI.
 
-We'll discuss about the idea of the app.
+## Quick Start
+
+### Local
+
+```bash
+python -m venv venv
+source venv/bin/activate
+pip install -r requirements.txt
+cp .env.example .env  # fill in API key
+python app.py          # http://localhost:8080
+```
+
+### Docker
+
+```bash
+cp .env.example .env  # fill in API key
+docker compose up --build   # http://localhost:8080
+```
+
+### Docker Commands
+
+```bash
+# Build and start
+docker compose up --build
+
+# Run in background
+docker compose up --build -d
+
+# Stop
+docker compose down
+
+# View logs (when running in background)
+docker compose logs -f
+
+# Rebuild after code changes
+docker compose up --build
+```
+
+## Project Structure
+
+```
+app.py          — Flask routes, entry point
+ingestion.py    — Parse files, chunk, embed, store in ChromaDB
+chat.py         — RAG retrieval + OpenAI chat
+exam.py         — Minimal exam generation
+database.py     — SQLite setup + queries
+static/         — HTML/JS frontend
+uploads/        — Raw uploaded files
+chroma_data/    — ChromaDB persistent storage
+```
+
+## Tech Stack
+
+- **Backend:** Flask (Python)
+- **Frontend:** Plain HTML/JS
+- **LLM:** OpenAI API (GPT-4o-mini)
+- **Embeddings:** text-embedding-3-small
+- **Vector Store:** ChromaDB (persistent)
+- **Database:** SQLite
+- **File Parsing:** PyPDF2, python-pptx
+
+## Docs
+
+- [Build Plan](docs/plan.md) — architecture, phases, and details
+- [Project Target](docs/target.md) — original project brief
