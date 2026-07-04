@@ -76,3 +76,30 @@ def delete_document(doc_id):
     conn.execute("DELETE FROM documents WHERE id = ?", (doc_id,))
     conn.commit()
     conn.close()
+
+
+def insert_chat_message(role, content):
+    conn = get_db()
+    conn.execute(
+        "INSERT INTO chat_history (role, content) VALUES (?, ?)",
+        (role, content),
+    )
+    conn.commit()
+    conn.close()
+
+
+def get_chat_history(limit=20):
+    conn = get_db()
+    rows = conn.execute(
+        "SELECT role, content FROM chat_history ORDER BY id DESC LIMIT ?",
+        (limit,),
+    ).fetchall()
+    conn.close()
+    return [dict(r) for r in reversed(rows)]
+
+
+def clear_chat_history():
+    conn = get_db()
+    conn.execute("DELETE FROM chat_history")
+    conn.commit()
+    conn.close()

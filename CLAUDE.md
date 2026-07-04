@@ -34,14 +34,14 @@ docker compose up --build   # http://localhost:8080
 
 ## Project structure
 ```
-app.py          — Flask routes, entry point
-ingestion.py    — Parse files, chunk, embed, store in ChromaDB
-chat.py         — RAG retrieval + OpenAI chat
-exam.py         — Minimal exam generation
-database.py     — SQLite setup + queries
-static/         — HTML/JS frontend
-uploads/        — Raw uploaded files
-chroma_data/    — ChromaDB persistent storage
+app.py              — Flask routes, entry point
+ingestion.py        — Parse files, chunk, embed, store in ChromaDB
+chat.py             — RAG retrieval + OpenAI chat (Phase 3)
+exam.py             — Minimal exam generation (Phase 4, not yet created)
+database.py         — SQLite setup + queries (documents, chat_history, exams)
+static/index.html   — Two-panel UI: document sidebar + chat
+uploads/            — Raw uploaded files
+chroma_data/        — ChromaDB persistent storage
 ```
 
 ## Current checkpoint
@@ -60,11 +60,11 @@ chroma_data/    — ChromaDB persistent storage
 - [x] Store in ChromaDB (persistent, `chroma_data/`)
 - [x] Link document metadata in SQLite (chunk_count updated on upload)
 
-### Phase 3 — Chatbot: NOT STARTED
-- [ ] /api/chat endpoint
-- [ ] RAG retrieval from ChromaDB
-- [ ] Conversation history
-- [ ] Chat UI with document selector
+### Phase 3 — Chatbot: DONE
+- [x] /api/chat endpoint (POST for messages, DELETE to clear history)
+- [x] RAG retrieval from ChromaDB (top-5 chunks, filtered by selected doc IDs)
+- [x] Conversation history (last 10 messages from SQLite, included in prompt)
+- [x] Chat UI with document selector (sidebar layout, click docs to select/deselect)
 
 ### Phase 4 — Exam Generation (minimal): NOT STARTED
 - [ ] /api/generate endpoint

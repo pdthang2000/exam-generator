@@ -3,8 +3,9 @@ from flask import Flask, request, jsonify, send_from_directory
 from werkzeug.utils import secure_filename
 from dotenv import load_dotenv
 
-from database import init_db, insert_document, get_all_documents, delete_document, update_chunk_count
+from database import init_db, insert_document, get_all_documents, delete_document, update_chunk_count, clear_chat_history
 from ingestion import parse_file, ingest_document, delete_document_chunks
+from chat import chat as chat_answer
 
 load_dotenv()
 
@@ -82,6 +83,28 @@ def preview_document(doc_id):
         return jsonify({"id": doc_id, "filename": doc["filename"], "text": text})
     except Exception as e:
         return jsonify({"error": str(e)}), 500
+
+
+@app.route("/api/chat", methods=["POST"])
+def chat_endpoint():
+    data = request.get_json()
+    if not data or not data.get("message", "").strip():
+        return jsonify({"error": "Message is required"}), 400
+
+    message = data["message"].strip()
+    document_ids = data.get("document_ids", [])
+
+    try:
+        answer = chat_answer(message, document_ids)
+        return jsonify({"answer": answer})
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route("/api/chat", methods=["DELETE"])
+def clear_chat():
+    clear_chat_history()
+    return jsonify({"ok": True})
 
 
 @app.route("/api/documents/<int:doc_id>", methods=["DELETE"])
