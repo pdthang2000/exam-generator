@@ -64,6 +64,13 @@ def get_all_documents():
     return [dict(r) for r in rows]
 
 
+def update_chunk_count(doc_id, count):
+    conn = get_db()
+    conn.execute("UPDATE documents SET chunk_count = ? WHERE id = ?", (count, doc_id))
+    conn.commit()
+    conn.close()
+
+
 def delete_document(doc_id):
     conn = get_db()
     conn.execute("DELETE FROM documents WHERE id = ?", (doc_id,))

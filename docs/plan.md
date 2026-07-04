@@ -17,7 +17,7 @@ Exam Page         ──── generate ──→  /api/generate      → same r
 | Decision | Choice | Reason |
 |---|---|---|
 | LLM | OpenAI API (GPT-4o-mini) via course endpoint | Does everything: question gen, chat, formatting |
-| Embeddings | text-embedding-3-small via OpenAI | Same API, no local models |
+| Embeddings | ChromaDB default (all-MiniLM-L6-v2, local) | Course API key only allows GPT-4o-mini, no embedding access |
 | Vector store | ChromaDB (persistent) | Simple, local, zero infrastructure |
 | Structured data | SQLite | Exams, scores, chat history — zero config |
 | Backend | Flask | Simple, reference code exists |
@@ -61,10 +61,10 @@ exam-generator/
 
 ### Phase 2 — Ingestion Pipeline
 
-- Chunk parsed text (500-800 tokens, with overlap)
-- Embed chunks via OpenAI text-embedding-3-small
+- Chunk parsed text (~2000 chars / ~500 tokens, with 200-char overlap)
+- Embed chunks via ChromaDB default model (local, free)
 - Store in ChromaDB (persistent mode)
-- Link document metadata in SQLite
+- Link document metadata in SQLite (chunk_count)
 
 ### Phase 3 — Chatbot (main focus)
 
@@ -80,9 +80,7 @@ exam-generator/
 ```
 User selects document(s) → types question
     ↓
-Embed the question (text-embedding-3-small)
-    ↓
-ChromaDB similarity search (top 5 chunks, filtered by selected docs)
+ChromaDB similarity search (top 5 chunks, filtered by selected docs, embedded automatically)
     ↓
 Build prompt:
   - System: "Answer based on the provided context. If not in context, say so."

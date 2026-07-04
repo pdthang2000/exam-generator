@@ -10,7 +10,7 @@ See [docs/plan.md](docs/plan.md) for architecture, tech stack, file structure, a
 - Backend: Flask (Python)
 - Frontend: Plain HTML/JS
 - LLM: OpenAI API (GPT-4o-mini) via `OPENAI_BASE_URL`
-- Embeddings: text-embedding-3-small
+- Embeddings: ChromaDB default (local, free — course API key only allows GPT-4o-mini)
 - Vector store: ChromaDB (persistent, `chroma_data/`)
 - Database: SQLite (`app.db`)
 - File parsing: PyPDF2, python-pptx
@@ -54,11 +54,11 @@ chroma_data/    — ChromaDB persistent storage
 - [x] Frontend: upload area + document list
 - [x] Docker setup (Dockerfile + docker-compose.yml)
 
-### Phase 2 — Ingestion Pipeline: NOT STARTED
-- [ ] Chunking logic
-- [ ] Embedding via OpenAI
-- [ ] Store in ChromaDB
-- [ ] Link document metadata in SQLite
+### Phase 2 — Ingestion Pipeline: DONE
+- [x] Chunking logic (~2000 char chunks with 200 char overlap, splits on paragraph/sentence boundaries)
+- [x] Embedding via ChromaDB default model (local, no API cost)
+- [x] Store in ChromaDB (persistent, `chroma_data/`)
+- [x] Link document metadata in SQLite (chunk_count updated on upload)
 
 ### Phase 3 — Chatbot: NOT STARTED
 - [ ] /api/chat endpoint

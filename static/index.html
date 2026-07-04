@@ -258,7 +258,7 @@
   uploadBtn.addEventListener("click", async () => {
     if (!selectedFile) return;
     uploadBtn.disabled = true;
-    statusEl.innerHTML = `<div class="status loading"><span class="spinner"></span>Uploading and parsing document...</div>`;
+    statusEl.innerHTML = `<div class="status loading"><span class="spinner"></span>Uploading, parsing, and indexing document...</div>`;
 
     const form = new FormData();
     form.append("file", selectedFile);
@@ -269,7 +269,7 @@
       let data;
       try { data = JSON.parse(raw); } catch { throw new Error("Server error"); }
       if (!res.ok) throw new Error(data.error || "Upload failed");
-      statusEl.innerHTML = `<div class="status success">Uploaded successfully!</div>`;
+      statusEl.innerHTML = `<div class="status success">Uploaded and indexed (${data.chunk_count} chunk${data.chunk_count > 1 ? 's' : ''}).</div>`;
       selectedFile = null;
       fileNameEl.textContent = "";
       fileInput.value = "";
@@ -295,7 +295,7 @@
           <div class="doc-icon ${doc.file_type}">${ICONS[doc.file_type] || "📄"}</div>
           <div>
             <div class="doc-name">${doc.filename}</div>
-            <div class="doc-meta">${doc.file_type.toUpperCase()} · ${new Date(doc.upload_time).toLocaleDateString()}</div>
+            <div class="doc-meta">${doc.file_type.toUpperCase()} · ${new Date(doc.upload_time).toLocaleDateString()}${doc.chunk_count ? ` · ${doc.chunk_count} chunk${doc.chunk_count > 1 ? 's' : ''}` : ''}</div>
           </div>
         </div>
         <div class="doc-actions">

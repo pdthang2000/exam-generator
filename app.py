@@ -3,8 +3,8 @@ from flask import Flask, request, jsonify, send_from_directory
 from werkzeug.utils import secure_filename
 from dotenv import load_dotenv
 
-from database import init_db, insert_document, get_all_documents, delete_document
-from ingestion import parse_file
+from database import init_db, insert_document, get_all_documents, delete_document, update_chunk_count
+from ingestion import parse_file, ingest_document, delete_document_chunks
 
 load_dotenv()
 
@@ -55,7 +55,11 @@ def upload_document():
             return jsonify({"error": "Could not extract text from file"}), 400
 
         doc_id = insert_document(filename, file_type)
-        return jsonify({"id": doc_id, "filename": filename, "file_type": file_type}), 201
+
+        chunk_count = ingest_document(doc_id, text)
+        update_chunk_count(doc_id, chunk_count)
+
+        return jsonify({"id": doc_id, "filename": filename, "file_type": file_type, "chunk_count": chunk_count}), 201
     except Exception as e:
         if "file_path" in locals() and os.path.exists(file_path):
             os.remove(file_path)
@@ -91,6 +95,7 @@ def remove_document(doc_id):
     if os.path.exists(file_path):
         os.remove(file_path)
 
+    delete_document_chunks(doc_id)
     delete_document(doc_id)
     return jsonify({"ok": True})
 
