@@ -1,0 +1,501 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Exam Generator</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: #f5f5f5;
+      color: #222;
+      min-height: 100vh;
+      padding: 40px 16px;
+    }
+
+    .container {
+      max-width: 720px;
+      margin: 0 auto;
+    }
+
+    h1 {
+      font-size: 1.8rem;
+      font-weight: 700;
+      margin-bottom: 8px;
+    }
+
+    .subtitle {
+      color: #666;
+      margin-bottom: 32px;
+    }
+
+    .upload-card {
+      background: #fff;
+      border: 2px dashed #ccc;
+      border-radius: 12px;
+      padding: 40px;
+      text-align: center;
+      transition: border-color 0.2s;
+      cursor: pointer;
+    }
+
+    .upload-card:hover, .upload-card.dragover {
+      border-color: #4f46e5;
+    }
+
+    .upload-icon {
+      font-size: 2.5rem;
+      margin-bottom: 12px;
+    }
+
+    .upload-card p { color: #555; margin-bottom: 16px; }
+
+    #file-input { display: none; }
+
+    .btn {
+      display: inline-block;
+      padding: 10px 24px;
+      border-radius: 8px;
+      border: none;
+      cursor: pointer;
+      font-size: 0.95rem;
+      font-weight: 600;
+      transition: opacity 0.15s;
+    }
+
+    .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+    .btn-primary { background: #4f46e5; color: #fff; }
+    .btn-primary:hover:not(:disabled) { background: #4338ca; }
+    .btn-outline { background: transparent; border: 2px solid #4f46e5; color: #4f46e5; }
+    .btn-outline:hover { background: #eef2ff; }
+
+    .file-name {
+      margin-top: 12px;
+      font-size: 0.9rem;
+      color: #4f46e5;
+      font-weight: 500;
+    }
+
+    #generate-btn {
+      display: block;
+      width: 100%;
+      margin-top: 20px;
+      padding: 14px;
+      font-size: 1rem;
+    }
+
+    .status {
+      text-align: center;
+      padding: 16px;
+      border-radius: 8px;
+      margin-top: 20px;
+      font-size: 0.95rem;
+    }
+
+    .status.loading { background: #eef2ff; color: #4338ca; }
+    .status.error { background: #fee2e2; color: #b91c1c; }
+
+    .spinner {
+      display: inline-block;
+      width: 16px; height: 16px;
+      border: 2px solid #c7d2fe;
+      border-top-color: #4f46e5;
+      border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+      vertical-align: middle;
+      margin-right: 8px;
+    }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* Quiz */
+    #quiz-section { display: none; margin-top: 36px; }
+
+    .quiz-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 24px;
+    }
+
+    .quiz-header h2 { font-size: 1.3rem; }
+
+    .progress-bar {
+      height: 6px;
+      background: #e5e7eb;
+      border-radius: 99px;
+      margin-bottom: 28px;
+      overflow: hidden;
+    }
+
+    .progress-fill {
+      height: 100%;
+      background: #4f46e5;
+      border-radius: 99px;
+      transition: width 0.3s;
+    }
+
+    .question-card {
+      background: #fff;
+      border-radius: 12px;
+      padding: 28px;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+    }
+
+    .question-num {
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: #6b7280;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin-bottom: 10px;
+    }
+
+    .question-text {
+      font-size: 1.05rem;
+      font-weight: 600;
+      line-height: 1.5;
+      margin-bottom: 20px;
+    }
+
+    .options { display: flex; flex-direction: column; gap: 10px; }
+
+    .option {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 12px 16px;
+      border: 2px solid #e5e7eb;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: border-color 0.15s, background 0.15s;
+      font-size: 0.95rem;
+    }
+
+    .option:hover:not(.disabled) { border-color: #a5b4fc; background: #f5f3ff; }
+
+    .option .label {
+      width: 28px; height: 28px;
+      border-radius: 50%;
+      background: #f3f4f6;
+      display: flex; align-items: center; justify-content: center;
+      font-weight: 700;
+      font-size: 0.85rem;
+      flex-shrink: 0;
+    }
+
+    .option.selected { border-color: #4f46e5; background: #eef2ff; }
+    .option.selected .label { background: #4f46e5; color: #fff; }
+
+    .option.correct { border-color: #16a34a; background: #f0fdf4; }
+    .option.correct .label { background: #16a34a; color: #fff; }
+
+    .option.wrong { border-color: #dc2626; background: #fef2f2; }
+    .option.wrong .label { background: #dc2626; color: #fff; }
+
+    .option.disabled { cursor: default; }
+
+    .feedback {
+      margin-top: 16px;
+      padding: 12px 16px;
+      border-radius: 8px;
+      font-size: 0.9rem;
+      font-weight: 500;
+    }
+
+    .feedback.correct { background: #f0fdf4; color: #16a34a; }
+    .feedback.wrong { background: #fef2f2; color: #dc2626; }
+
+    .nav {
+      display: flex;
+      justify-content: space-between;
+      margin-top: 24px;
+    }
+
+    /* Results */
+    #results-section { display: none; margin-top: 36px; }
+
+    .score-card {
+      background: #fff;
+      border-radius: 12px;
+      padding: 40px;
+      text-align: center;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+      margin-bottom: 28px;
+    }
+
+    .score-circle {
+      width: 120px; height: 120px;
+      border-radius: 50%;
+      border: 6px solid #4f46e5;
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      margin: 0 auto 20px;
+    }
+
+    .score-num { font-size: 2rem; font-weight: 800; color: #4f46e5; }
+    .score-label { font-size: 0.8rem; color: #6b7280; }
+    .score-card h2 { font-size: 1.4rem; margin-bottom: 8px; }
+    .score-card p { color: #6b7280; }
+
+    .review-list { display: flex; flex-direction: column; gap: 16px; }
+
+    .review-item {
+      background: #fff;
+      border-radius: 10px;
+      padding: 20px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.07);
+      border-left: 4px solid transparent;
+    }
+
+    .review-item.correct { border-left-color: #16a34a; }
+    .review-item.wrong { border-left-color: #dc2626; }
+
+    .review-q { font-weight: 600; margin-bottom: 8px; font-size: 0.95rem; }
+    .review-meta { font-size: 0.85rem; color: #6b7280; }
+    .review-meta span { font-weight: 600; }
+    .review-meta .correct-ans { color: #16a34a; }
+    .review-meta .wrong-ans { color: #dc2626; }
+  </style>
+</head>
+<body>
+<div class="container">
+  <h1>Exam Generator</h1>
+  <p class="subtitle">Upload a PDF and get 10 multiple choice questions instantly.</p>
+
+  <!-- Upload Section -->
+  <div id="upload-section">
+    <div class="upload-card" id="drop-zone">
+      <div class="upload-icon">📄</div>
+      <p>Drag & drop a PDF here, or click to browse</p>
+      <label for="file-input" class="btn btn-outline">Choose PDF</label>
+      <input type="file" id="file-input" accept=".pdf" />
+      <div class="file-name" id="file-name"></div>
+    </div>
+    <button class="btn btn-primary" id="generate-btn" disabled>Generate Questions</button>
+    <div id="status"></div>
+  </div>
+
+  <!-- Quiz Section -->
+  <div id="quiz-section">
+    <div class="quiz-header">
+      <h2>Quiz</h2>
+      <span id="quiz-counter" style="color:#6b7280;font-size:0.9rem"></span>
+    </div>
+    <div class="progress-bar"><div class="progress-fill" id="progress-fill"></div></div>
+    <div class="question-card">
+      <div class="question-num" id="question-num"></div>
+      <div class="question-text" id="question-text"></div>
+      <div class="options" id="options"></div>
+      <div class="feedback" id="feedback" style="display:none"></div>
+    </div>
+    <div class="nav">
+      <button class="btn btn-outline" id="prev-btn">← Previous</button>
+      <button class="btn btn-primary" id="next-btn">Next →</button>
+    </div>
+  </div>
+
+  <!-- Results Section -->
+  <div id="results-section">
+    <div class="score-card">
+      <div class="score-circle">
+        <div class="score-num" id="score-num"></div>
+        <div class="score-label">/ 10</div>
+      </div>
+      <h2 id="score-title"></h2>
+      <p id="score-desc"></p>
+    </div>
+    <div class="review-list" id="review-list"></div>
+    <div style="text-align:center;margin-top:28px">
+      <button class="btn btn-primary" onclick="restart()">Try Another PDF</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  let questions = [];
+  let currentIdx = 0;
+  let userAnswers = [];
+  let selectedFile = null;
+
+  const fileInput = document.getElementById("file-input");
+  const dropZone = document.getElementById("drop-zone");
+  const fileNameEl = document.getElementById("file-name");
+  const generateBtn = document.getElementById("generate-btn");
+  const statusEl = document.getElementById("status");
+
+  // File handling
+  dropZone.addEventListener("click", () => fileInput.click());
+  fileInput.addEventListener("change", () => setFile(fileInput.files[0]));
+
+  dropZone.addEventListener("dragover", e => { e.preventDefault(); dropZone.classList.add("dragover"); });
+  dropZone.addEventListener("dragleave", () => dropZone.classList.remove("dragover"));
+  dropZone.addEventListener("drop", e => {
+    e.preventDefault();
+    dropZone.classList.remove("dragover");
+    const f = e.dataTransfer.files[0];
+    if (f && f.type === "application/pdf") setFile(f);
+  });
+
+  function setFile(f) {
+    selectedFile = f;
+    fileNameEl.textContent = f.name;
+    generateBtn.disabled = false;
+    statusEl.innerHTML = "";
+  }
+
+  generateBtn.addEventListener("click", async () => {
+    if (!selectedFile) return;
+    generateBtn.disabled = true;
+    statusEl.innerHTML = `<div class="status loading"><span class="spinner"></span>Analyzing PDF and generating questions…</div>`;
+
+    const form = new FormData();
+    form.append("pdf", selectedFile);
+
+    try {
+      const res = await fetch("/generate", { method: "POST", body: form });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Server error");
+      questions = data.questions;
+      userAnswers = new Array(questions.length).fill(null);
+      startQuiz();
+    } catch (err) {
+      generateBtn.disabled = false;
+      statusEl.innerHTML = `<div class="status error">Error: ${err.message}</div>`;
+    }
+  });
+
+  function startQuiz() {
+    document.getElementById("upload-section").style.display = "none";
+    document.getElementById("quiz-section").style.display = "block";
+    currentIdx = 0;
+    renderQuestion();
+  }
+
+  function renderQuestion() {
+    const q = questions[currentIdx];
+    const total = questions.length;
+
+    document.getElementById("quiz-counter").textContent = `${currentIdx + 1} / ${total}`;
+    document.getElementById("progress-fill").style.width = `${((currentIdx + 1) / total) * 100}%`;
+    document.getElementById("question-num").textContent = `Question ${currentIdx + 1}`;
+    document.getElementById("question-text").textContent = q.question;
+
+    const optionsEl = document.getElementById("options");
+    optionsEl.innerHTML = "";
+    const answered = userAnswers[currentIdx];
+
+    for (const [key, text] of Object.entries(q.options)) {
+      const div = document.createElement("div");
+      div.className = "option";
+      div.dataset.key = key;
+
+      if (answered) {
+        div.classList.add("disabled");
+        if (key === q.answer) div.classList.add("correct");
+        else if (key === answered && answered !== q.answer) div.classList.add("wrong");
+      } else {
+        div.addEventListener("click", () => selectAnswer(key));
+      }
+
+      div.innerHTML = `<div class="label">${key}</div><div>${text}</div>`;
+      optionsEl.appendChild(div);
+    }
+
+    const feedbackEl = document.getElementById("feedback");
+    if (answered) {
+      feedbackEl.style.display = "block";
+      if (answered === q.answer) {
+        feedbackEl.className = "feedback correct";
+        feedbackEl.textContent = "Correct!";
+      } else {
+        feedbackEl.className = "feedback wrong";
+        feedbackEl.textContent = `Incorrect. The correct answer is ${q.answer}: ${q.options[q.answer]}`;
+      }
+    } else {
+      feedbackEl.style.display = "none";
+    }
+
+    document.getElementById("prev-btn").style.visibility = currentIdx === 0 ? "hidden" : "visible";
+    const nextBtn = document.getElementById("next-btn");
+    nextBtn.textContent = currentIdx === total - 1 ? "See Results" : "Next →";
+  }
+
+  function selectAnswer(key) {
+    if (userAnswers[currentIdx]) return;
+    userAnswers[currentIdx] = key;
+    renderQuestion();
+  }
+
+  document.getElementById("prev-btn").addEventListener("click", () => {
+    if (currentIdx > 0) { currentIdx--; renderQuestion(); }
+  });
+
+  document.getElementById("next-btn").addEventListener("click", () => {
+    if (!userAnswers[currentIdx]) {
+      const feedbackEl = document.getElementById("feedback");
+      feedbackEl.className = "feedback wrong";
+      feedbackEl.textContent = "Please select an answer before continuing.";
+      feedbackEl.style.display = "block";
+      return;
+    }
+    if (currentIdx < questions.length - 1) {
+      currentIdx++;
+      renderQuestion();
+    } else {
+      showResults();
+    }
+  });
+
+  function showResults() {
+    document.getElementById("quiz-section").style.display = "none";
+    document.getElementById("results-section").style.display = "block";
+
+    const score = userAnswers.filter((a, i) => a === questions[i].answer).length;
+    document.getElementById("score-num").textContent = score;
+
+    const titles = ["Keep practicing!", "Getting there!", "Good job!", "Great work!", "Excellent!"];
+    const descs = [
+      "Review the material and try again.",
+      "You're making progress. Review the missed questions.",
+      "Solid effort! A bit more review and you'll ace it.",
+      "You have a strong grasp of the material.",
+      "Outstanding! You've mastered this content."
+    ];
+    const tier = Math.floor((score / questions.length) * 4);
+    document.getElementById("score-title").textContent = titles[tier];
+    document.getElementById("score-desc").textContent = descs[tier];
+
+    const reviewList = document.getElementById("review-list");
+    reviewList.innerHTML = "";
+    questions.forEach((q, i) => {
+      const correct = userAnswers[i] === q.answer;
+      const div = document.createElement("div");
+      div.className = `review-item ${correct ? "correct" : "wrong"}`;
+      div.innerHTML = `
+        <div class="review-q">${i + 1}. ${q.question}</div>
+        <div class="review-meta">
+          Your answer: <span class="${correct ? "correct-ans" : "wrong-ans"}">${userAnswers[i]}: ${q.options[userAnswers[i]]}</span>
+          ${!correct ? `&nbsp;·&nbsp; Correct: <span class="correct-ans">${q.answer}: ${q.options[q.answer]}</span>` : ""}
+        </div>`;
+      reviewList.appendChild(div);
+    });
+  }
+
+  function restart() {
+    questions = [];
+    userAnswers = [];
+    currentIdx = 0;
+    selectedFile = null;
+    fileNameEl.textContent = "";
+    fileInput.value = "";
+    generateBtn.disabled = true;
+    statusEl.innerHTML = "";
+    document.getElementById("results-section").style.display = "none";
+    document.getElementById("upload-section").style.display = "block";
+  }
+</script>
+</body>
+</html>
