@@ -3,8 +3,10 @@
 ## What is this
 A RAG-based app with two features: chatbot Q&A over uploaded documents, and exam generation from those documents. Course final project for FSoft AI Application Engineer.
 
-## Full plan
-See [docs/plan.md](docs/plan.md) for architecture, tech stack, file structure, and phase details.
+## Plans
+- [docs/plan-chatbot.md](docs/plan-chatbot.md) — Document upload, ingestion, chatbot feature
+- [docs/plan-exam.md](docs/plan-exam.md) — Exam generation, quiz-taking feature
+- [docs/plan.md](docs/plan.md) — Architecture overview, decisions, schema
 
 ## Tech stack
 - Backend: Flask (Python)
@@ -32,40 +34,21 @@ cp .env.example .env  # fill in API key
 docker compose up --build   # http://localhost:8080
 ```
 
+### Tests
+```bash
+python -m pytest tests/ -v
+```
+
 ## Project structure
 ```
 app.py              — Flask routes, entry point
 ingestion.py        — Parse files, chunk, embed, store in ChromaDB
-chat.py             — RAG retrieval + OpenAI chat (Phase 3)
-exam.py             — Minimal exam generation (Phase 4, not yet created)
+chat.py             — RAG retrieval + OpenAI chat
+exam.py             — Exam generation + export logic
 database.py         — SQLite setup + queries (documents, chat_history, exams)
 static/index.html   — Two-panel UI: document sidebar + chat
+static/exam.html    — Exam page: config, quiz, results
+tests/              — Unit tests (pytest)
 uploads/            — Raw uploaded files
 chroma_data/        — ChromaDB persistent storage
 ```
-
-## Current checkpoint
-
-### Phase 1 — Skeleton + Document Upload: DONE
-- [x] Flask app with basic routes
-- [x] SQLite schema
-- [x] File upload endpoint (PDF, PPTX, TXT)
-- [x] Parse text from each file type
-- [x] Frontend: upload area + document list
-- [x] Docker setup (Dockerfile + docker-compose.yml)
-
-### Phase 2 — Ingestion Pipeline: DONE
-- [x] Chunking logic (~2000 char chunks with 200 char overlap, splits on paragraph/sentence boundaries)
-- [x] Embedding via ChromaDB default model (local, no API cost)
-- [x] Store in ChromaDB (persistent, `chroma_data/`)
-- [x] Link document metadata in SQLite (chunk_count updated on upload)
-
-### Phase 3 — Chatbot: DONE
-- [x] /api/chat endpoint (POST for messages, DELETE to clear history)
-- [x] RAG retrieval from ChromaDB (top-5 chunks, filtered by selected doc IDs)
-- [x] Conversation history (last 10 messages from SQLite, included in prompt)
-- [x] Chat UI with document selector (sidebar layout, click docs to select/deselect)
-
-### Phase 4 — Exam Generation (minimal): NOT STARTED
-- [ ] /api/generate endpoint
-- [ ] Quiz UI (based on reference)

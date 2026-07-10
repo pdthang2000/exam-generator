@@ -19,29 +19,22 @@ def get_openai_client():
     )
 
 
-def retrieve_chunks(query, document_ids, n_results=5):
+def retrieve_chunks(query, document_id, n_results=5):
     collection = get_chroma_collection()
-    where_filter = None
-    if document_ids:
-        if len(document_ids) == 1:
-            where_filter = {"document_id": document_ids[0]}
-        else:
-            where_filter = {"document_id": {"$in": document_ids}}
-
     kwargs = {"query_texts": [query], "n_results": n_results}
-    if where_filter:
-        kwargs["where"] = where_filter
+    if document_id:
+        kwargs["where"] = {"document_id": document_id}
 
     results = collection.query(**kwargs)
     return results["documents"][0] if results["documents"] else []
 
 
-def chat(message, document_ids=None):
-    chunks = retrieve_chunks(message, document_ids)
+def chat(message, document_id):
+    chunks = retrieve_chunks(message, document_id)
 
     context = "\n\n---\n\n".join(chunks) if chunks else "No relevant context found."
 
-    history = get_chat_history(limit=10)
+    history = get_chat_history(document_id, limit=10)
 
     messages = [{"role": "system", "content": SYSTEM_PROMPT}]
     messages.append({
@@ -59,7 +52,7 @@ def chat(message, document_ids=None):
     )
     answer = response.choices[0].message.content
 
-    insert_chat_message("user", message)
-    insert_chat_message("assistant", answer)
+    insert_chat_message(document_id, "user", message)
+    insert_chat_message(document_id, "assistant", answer)
 
     return answer

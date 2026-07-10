@@ -367,6 +367,7 @@
     <div class="sidebar-header">
       <h1>AI Exam Generator</h1>
       <p class="subtitle">Upload documents, then chat with AI</p>
+      <a href="/exam" style="display:inline-block;margin-top:8px;padding:6px 14px;border-radius:8px;background:#4f46e5;color:#fff;text-decoration:none;font-size:0.82rem;font-weight:600;">Generate Exam</a>
     </div>
 
     <div class="upload-area">
@@ -380,7 +381,7 @@
       <div id="status"></div>
     </div>
 
-    <div class="section-title">Documents <span style="font-weight:400;color:#9ca3af;font-size:0.78rem;">(click to select for chat)</span></div>
+    <div class="section-title">Documents <span style="font-weight:400;color:#9ca3af;font-size:0.78rem;">(click to select one for chat)</span></div>
     <div id="doc-list" class="doc-list">
       <div class="empty-state">No documents uploaded yet.</div>
     </div>
@@ -430,7 +431,7 @@
   const chatDocHint = document.getElementById("chat-doc-hint");
 
   let selectedFile = null;
-  let selectedDocIds = new Set();
+  let selectedDocId = null;
   let allDocs = [];
   let sending = false;
 
@@ -493,10 +494,8 @@
     const res = await fetch("/api/documents");
     allDocs = await res.json();
 
-    // Remove doc ids that no longer exist
-    const existingIds = new Set(allDocs.map(d => d.id));
-    for (const id of selectedDocIds) {
-      if (!existingIds.has(id)) selectedDocIds.delete(id);
+    if (selectedDocId && !allDocs.some(d => d.id === selectedDocId)) {
+      selectedDocId = null;
     }
 
     renderDocList();
@@ -510,7 +509,7 @@
     }
 
     docListEl.innerHTML = allDocs.map(doc => {
-      const sel = selectedDocIds.has(doc.id) ? "selected" : "";
+      const sel = selectedDocId === doc.id ? "selected" : "";
       return '<div class="doc-item ' + sel + '" data-id="' + doc.id + '">' +
         '<div class="doc-info" onclick="toggleDoc(' + doc.id + ')">' +
           '<div class="doc-icon ' + doc.file_type + '">' + (ICONS[doc.file_type] || "\u{1F4C4}") + '</div>' +
@@ -528,23 +527,46 @@
   }
 
   function toggleDoc(id) {
-    if (selectedDocIds.has(id)) {
-      selectedDocIds.delete(id);
-    } else {
-      selectedDocIds.add(id);
-    }
+    selectedDocId = selectedDocId === id ? null : id;
     renderDocList();
-    updateChatHint();
+    updateChatState();
+    if (selectedDocId) {
+      loadChatHistory(selectedDocId);
+    } else {
+      chatMessages.innerHTML = '<div class="chat-empty" id="chat-empty">Select a document to start chatting.</div>';
+    }
   }
 
-  function updateChatHint() {
-    if (selectedDocIds.size === 0) {
-      chatDocHint.textContent = "Select documents on the left to scope your questions";
+  function updateChatState() {
+    if (!selectedDocId) {
+      chatDocHint.textContent = "Select a document on the left to start chatting";
+      chatInput.disabled = true;
+      chatInput.placeholder = "Select a document first...";
+      sendBtn.disabled = true;
     } else {
-      const names = allDocs.filter(d => selectedDocIds.has(d.id)).map(d => d.filename);
-      chatDocHint.textContent = "Chatting with: " + names.join(", ");
+      const doc = allDocs.find(d => d.id === selectedDocId);
+      chatDocHint.textContent = "Chatting with: " + (doc ? doc.filename : "");
+      chatInput.disabled = false;
+      chatInput.placeholder = "Ask a question about your document...";
+      sendBtn.disabled = !chatInput.value.trim() || sending;
     }
-    sendBtn.disabled = sending;
+  }
+
+  async function loadChatHistory(docId) {
+    chatMessages.innerHTML = "";
+    try {
+      const res = await fetch("/api/chat/history/" + docId);
+      const history = await res.json();
+      if (history.length === 0) {
+        chatMessages.innerHTML = '<div class="chat-empty">No conversation yet. Ask a question to get started.</div>';
+      } else {
+        for (const msg of history) {
+          appendMsg(msg.role, msg.content);
+        }
+      }
+    } catch (err) {
+      chatMessages.innerHTML = '<div class="chat-empty">Failed to load history.</div>';
+    }
   }
 
   async function previewDoc(id, filename) {
@@ -581,7 +603,7 @@
   chatInput.addEventListener("input", () => {
     chatInput.style.height = "auto";
     chatInput.style.height = Math.min(chatInput.scrollHeight, 120) + "px";
-    sendBtn.disabled = !chatInput.value.trim() || sending;
+    sendBtn.disabled = !selectedDocId || !chatInput.value.trim() || sending;
   });
 
   chatInput.addEventListener("keydown", e => {
@@ -595,14 +617,15 @@
 
   async function sendMessage() {
     const message = chatInput.value.trim();
-    if (!message || sending) return;
+    if (!message || sending || !selectedDocId) return;
 
     sending = true;
     sendBtn.disabled = true;
     chatInput.value = "";
     chatInput.style.height = "auto";
 
-    if (chatEmpty) chatEmpty.remove();
+    const emptyEl = chatMessages.querySelector(".chat-empty");
+    if (emptyEl) emptyEl.remove();
 
     appendMsg("user", message);
     const thinkingEl = appendMsg("thinking", "Thinking...");
@@ -613,7 +636,7 @@
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           message: message,
-          document_ids: Array.from(selectedDocIds),
+          document_id: selectedDocId || null,
         }),
       });
 
@@ -628,7 +651,7 @@
     }
 
     sending = false;
-    sendBtn.disabled = !chatInput.value.trim();
+    sendBtn.disabled = !selectedDocId || !chatInput.value.trim();
     chatMessages.scrollTop = chatMessages.scrollHeight;
   }
 
@@ -642,12 +665,14 @@
   }
 
   document.getElementById("clear-chat-btn").addEventListener("click", async () => {
-    await fetch("/api/chat", { method: "DELETE" });
-    chatMessages.innerHTML = '<div class="chat-empty" id="chat-empty">Select a document and ask a question to get started.</div>';
+    if (!selectedDocId) return;
+    await fetch("/api/chat/" + selectedDocId, { method: "DELETE" });
+    chatMessages.innerHTML = '<div class="chat-empty">No conversation yet. Ask a question to get started.</div>';
   });
 
   // --- Init ---
   loadDocuments();
+  updateChatState();
 </script>
 </body>
 </html>
