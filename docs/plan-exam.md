@@ -76,8 +76,8 @@ Optional: save exam (POST /api/exams) or export results
 - [x] Difficulty presets (Easy/Balanced/Hard) + custom sliders
 - [x] Client-side validation (types sum to total, difficulty sums to 100%)
 
-### Phase 4C — Frontend: Quiz-Taking UI: NOT STARTED
-- [ ] Practice mode (one-at-a-time, immediate feedback)
-- [ ] Exam mode (all questions, grade on submit)
-- [ ] Results view (score, per-question breakdown with explanations)
-- [ ] Post-quiz actions: save exam, export exam, export results, retake, new exam
+### Phase 4C — Frontend: Quiz-Taking UI: DONE
+- [x] Practice mode (one-at-a-time, immediate feedback, running score)
+- [x] Exam mode (all questions, unanswered warning, grade on submit)
+- [x] Results view (score, per-question breakdown with correct/wrong indicators, explanations)
+- [x] Post-quiz actions: save exam, export exam (JSON/MD/TXT/CSV), export results (JSON/MD/TXT/CSV), retake, new exam
