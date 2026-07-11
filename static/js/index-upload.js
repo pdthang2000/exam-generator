@@ -1,4 +1,7 @@
-dropZone.addEventListener("click", () => fileInput.click());
+dropZone.addEventListener("click", (e) => {
+  if (e.target === fileInput || e.target.tagName === "LABEL") return;
+  fileInput.click();
+});
 fileInput.addEventListener("change", () => handleFile(fileInput.files[0]));
 dropZone.addEventListener("dragover", e => { e.preventDefault(); dropZone.classList.add("dragover"); });
 dropZone.addEventListener("dragleave", () => dropZone.classList.remove("dragover"));

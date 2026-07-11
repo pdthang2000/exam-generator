@@ -71,6 +71,7 @@ document.getElementById("preview-overlay").addEventListener("click", e => {
 });
 
 async function deleteDoc(id) {
+  if (!confirm("Are you sure you want to remove this document?")) return;
   await fetch("/api/documents/" + id, { method: "DELETE" });
   loadDocuments();
 }
